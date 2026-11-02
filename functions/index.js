@@ -12,6 +12,7 @@ const shouldCompress = require("../util/shouldCompress");
 const compress       = require("../util/compress");
 
 const DEFAULT_QUALITY = 40;
+const IDENTITY        = "bandwidth-hero-proxy";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin":  "*",
@@ -55,12 +56,15 @@ function fetchWithTimeout(url, options, ms) {
   return Promise.race([fetch(url, options), timeout]);
 }
 
+exports.IDENTITY = IDENTITY;
+
 exports.handler = async (e) => {
   if (e.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers: CORS_HEADERS, body: "" };
   }
 
-  let { url: r } = e.queryStringParameters;
+  const params = e.queryStringParameters || {};
+  let { url: r } = params;
 
   // jpeg:      "1" = use JPEG (client has no WebP), "0" or absent = use WebP
   // bw:        "1" = grayscale, "0" or absent = colour
@@ -69,10 +73,16 @@ exports.handler = async (e) => {
   //            Both accepted so this proxy works with either extension.
   // max_width: downscale images wider than this before compressing, 0 = no limit.
   //            Our extension sends this; original extension does not — safe to ignore.
-  const { jpeg: s, bw: o, quality: q, l, max_width: mw } = e.queryStringParameters;
+  const { jpeg: s, bw: o, quality: q, l, max_width: mw } = params;
 
   if (!r) {
-    return { statusCode: 200, headers: CORS_HEADERS, body: "bandwidth-hero-proxy" };
+    // Extensions validate the service URL by checking that the body is exactly
+    // this identity string, so it must stay plain text with nothing else in it.
+    return {
+      statusCode: 200,
+      headers: { ...CORS_HEADERS, "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+      body: IDENTITY,
+    };
   }
 
   try { r = JSON.parse(r); } catch {}
