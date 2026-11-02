@@ -4,6 +4,26 @@
 [functions]
   directory = "functions/"
 
+# Bare site URL works as a proxy URL too (see functions/root.js).
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/root"
+  status = 200
+  force = true
+
+# "/api" and "/api/" go to the proxy instead of a non-existent function.
+[[redirects]]
+  from = "/api"
+  to = "/.netlify/functions/index"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/"
+  to = "/.netlify/functions/index"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
